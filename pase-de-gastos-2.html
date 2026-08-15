@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Pase de Gastos — Presupuesto de viaje</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600;700&display=swap');
+
+  :root {
+    --paper: #EFF3F8;
+    --card: #FFFFFF;
+    --ink: #1B2740;
+    --ink-soft: #5B6B85;
+    --airmail-red: #C1432E;
+    --airmail-blue: #2C5990;
+    --gold: #B9872E;
+    --stamp-green: #3E7A5D;
+    --line: #D7DEE8;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: 'Inter', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px));
+  }
+  .title-serif { font-family: 'Fraunces', serif; }
+  button, input { font-family: inherit; }
+  button:focus-visible, input:focus-visible, a:focus-visible {
+    outline: 2px solid var(--gold); outline-offset: 2px;
+  }
+
+  .airmail-stripe {
+    height: 7px;
+    background: repeating-linear-gradient(135deg,
+      var(--airmail-red) 0 12px, var(--paper) 12px 17px,
+      var(--airmail-blue) 17px 29px, var(--paper) 29px 34px);
+  }
+  .app-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 16px 18px 10px;
+  }
+  .app-header h2 { margin: 0; font-size: 1.15rem; font-weight: 700; }
+  .app-header .sub { font-size: 0.78rem; color: var(--ink-soft); margin-top: 2px; }
+
+  .content { max-width: 480px; margin: 0 auto; padding: 4px 16px 0; }
+
+  .fade-in { animation: fadeIn .35s ease both; }
+  @media (prefers-reduced-motion: reduce) { .fade-in { animation: none; } }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .card {
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 16px;
+    margin-bottom: 14px;
+  }
+
+  .setup-wrap { padding: 24px 16px; max-width: 480px; margin: 0 auto; }
+  .setup-card { padding: 22px; }
+  .eyebrow { text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.72rem; color: var(--airmail-blue); font-weight: 700; margin-bottom: 6px; }
+  .setup-card h1 { font-size: 1.5rem; line-height: 1.2; margin: 0 0 8px; }
+  .muted-text { color: var(--ink-soft); font-size: 0.9rem; line-height: 1.45; margin: 0 0 16px; }
+
+  .field { display: block; margin-bottom: 14px; }
+  .field-label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 6px; color: var(--ink); }
+  .input-prefix {
+    display: flex; align-items: center; gap: 6px;
+    border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px;
+    background: var(--paper);
+  }
+  .input-prefix span { color: var(--ink-soft); font-weight: 600; }
+  .input-prefix input {
+    border: none; background: transparent; font-size: 1rem; width: 100%;
+    outline: none; color: var(--ink); font-family: 'IBM Plex Mono', monospace;
+  }
+  .input-prefix-sm { padding: 8px 10px; }
+  .input-plain {
+    width: 100%; border: 1.5px solid var(--line); border-radius: 10px;
+    padding: 10px 12px; font-size: 1rem; background: var(--paper); color: var(--ink);
+    outline: none;
+  }
+  .input-note { font-size: 0.92rem; }
+
+  .preview-pill {
+    background: #F0E9D8; color: #7A5B1E; border-radius: 999px;
+    padding: 8px 14px; font-size: 0.85rem; margin-bottom: 16px; display: inline-block;
+  }
+
+  .btn {
+    border: none; border-radius: 10px; padding: 12px 16px;
+    font-weight: 700; font-size: 0.95rem; cursor: pointer;
+    transition: transform .1s ease, opacity .15s ease;
+  }
+  .btn:active { transform: scale(0.98); }
+  .btn:disabled { opacity: 0.45; cursor: not-allowed; }
+  .btn-primary { background: var(--airmail-blue); color: #fff; }
+  .btn-secondary { background: var(--ink); color: #fff; }
+  .btn-block { width: 100%; }
+
+  .topbar { display: flex; align-items: center; justify-content: space-between; padding: 14px 2px 10px; }
+  .day-tag {
+    font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 0.8rem;
+    letter-spacing: 0.05em; color: var(--ink-soft);
+  }
+  .icon-btn {
+    background: none; border: none; font-size: 1.3rem; color: var(--ink-soft);
+    cursor: pointer; padding: 4px 8px; border-radius: 8px;
+  }
+
+  .ticket { display: flex; margin-bottom: 14px; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); }
+  .ticket-stub {
+    background: var(--ink); color: var(--paper); width: 42px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .ticket-stub span {
+    writing-mode: vertical-rl; transform: rotate(180deg);
+    font-family: 'IBM Plex Mono', monospace; font-size: 0.72rem;
+    letter-spacing: 0.08em; font-weight: 600;
+  }
+  .ticket-body { background: var(--card); flex: 1; padding: 20px 18px; position: relative; }
+  .ticket-divider::before, .ticket-divider::after {
+    content: ''; position: absolute; left: -9px; width: 18px; height: 18px;
+    background: var(--paper); border-radius: 50%; border-right: 1px dashed var(--line);
+  }
+  .ticket-divider::before { top: -1px; }
+  .ticket-divider::after { bottom: -1px; }
+
+  .hero-label { font-size: 0.72rem; letter-spacing: 0.08em; color: var(--ink-soft); font-weight: 700; margin-bottom: 6px; }
+  .flap-row { display: inline-flex; gap: 3px; flex-wrap: wrap; margin-bottom: 6px; }
+  .flap {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 1.15rem; padding: 4px 3px;
+    background: var(--ink); color: var(--paper);
+    border-radius: 5px; font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600; font-size: 1.5rem;
+  }
+  .flap-negative .flap { background: var(--airmail-red); }
+  .flap-space { width: 6px; }
+  .hero-sub { font-size: 0.85rem; color: var(--ink-soft); margin-bottom: 12px; }
+  .carry-pill {
+    display: inline-block; margin-left: 8px; background: #EAF2ED; color: var(--stamp-green);
+    padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+  }
+  .carry-neg { background: #FBEAE6; color: var(--airmail-red); }
+  .hero-total { margin-top: 6px; font-size: 0.85rem; font-weight: 700; color: var(--ink); }
+
+  .progress-track { height: 8px; background: var(--paper); border-radius: 999px; overflow: hidden; }
+  .progress-fill { height: 100%; border-radius: 999px; transition: width .3s ease; }
+
+  .section-label { font-weight: 700; font-size: 0.85rem; margin-bottom: 10px; }
+  .expense-form { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px; }
+  .expense-form .input-prefix { flex: 0 0 100px; }
+  .expense-form .input-note { flex: 1 1 140px; }
+  .expense-form .btn { flex: 0 0 auto; }
+
+  .empty-hint { color: var(--ink-soft); font-size: 0.85rem; margin: 6px 0 0; }
+  .expense-list { list-style: none; margin: 8px 0 0; padding: 0; }
+  .expense-row {
+    display: flex; align-items: center; gap: 10px;
+    padding: 9px 0; border-top: 1px solid var(--line);
+  }
+  .expense-note { flex: 1; font-size: 0.9rem; }
+  .expense-amount { font-family: 'IBM Plex Mono', monospace; font-weight: 600; color: var(--airmail-red); }
+  .expense-del {
+    background: none; border: none; color: var(--ink-soft); font-size: 1.1rem;
+    cursor: pointer; line-height: 1; padding: 2px 4px;
+  }
+
+  .summary-card .summary-row {
+    display: flex; justify-content: space-between; font-size: 0.88rem;
+    padding: 5px 0; color: var(--ink-soft);
+  }
+  .summary-row strong { color: var(--ink); font-family: 'IBM Plex Mono', monospace; }
+  .summary-row strong.neg { color: var(--airmail-red); }
+  .summary-card .progress-track { margin-top: 8px; }
+
+  .last-day-note {
+    text-align: center; background: #F0E9D8; color: #7A5B1E;
+    padding: 12px; border-radius: 12px; font-weight: 600; font-size: 0.9rem;
+  }
+
+  .near-label { font-weight: 700; margin: 4px 0 10px; }
+  .error-text { color: var(--airmail-red); font-size: 0.85rem; margin-top: 10px; }
+
+  .map-embed-wrap {
+    border-radius: 12px; overflow: hidden; border: 1px solid var(--line);
+    margin-bottom: 14px; background: var(--paper);
+  }
+  .map-embed-wrap iframe { width: 100%; height: 220px; border: 0; display: block; }
+
+  .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .cat-btn {
+    display: flex; align-items: center; gap: 8px;
+    border: 1.5px solid var(--line); border-radius: 10px; padding: 10px 12px;
+    color: var(--ink); text-decoration: none; font-weight: 600; font-size: 0.85rem;
+    background: var(--paper);
+  }
+  .cat-btn:hover { border-color: var(--airmail-blue); }
+  .cat-emoji { font-size: 1.05rem; }
+  .disclaimer { font-size: 0.72rem; color: var(--ink-soft); margin: 4px 0 0; line-height: 1.4; }
+
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: var(--card); border-top: 1px solid var(--line);
+    display: flex; padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    max-width: 480px; margin: 0 auto;
+  }
+  .nav-tab {
+    flex: 1; background: none; border: none; padding: 8px 4px;
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    color: var(--ink-soft); cursor: pointer; font-size: 0.72rem; font-weight: 600;
+  }
+  .nav-tab.active { color: var(--ink); }
+  .nav-tab .dot { width: 4px; height: 4px; border-radius: 50%; background: var(--gold); opacity: 0; }
+  .nav-tab.active .dot { opacity: 1; }
+  .nav-icon { font-size: 1.25rem; }
+
+  .modal-overlay {
+    position: fixed; inset: 0; background: rgba(27,39,64,0.5);
+    display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 20;
+  }
+  .modal { background: var(--card); border-radius: 14px; padding: 20px; max-width: 340px; width: 100%; }
+  .modal h3 { margin: 0 0 8px; font-size: 1.05rem; }
+  .modal p { color: var(--ink-soft); font-size: 0.87rem; margin: 0 0 16px; line-height: 1.4; }
+  .modal-actions { display: flex; gap: 10px; }
+  .modal-actions .btn { flex: 1; }
+  .modal-actions-col { flex-direction: column; }
+  .modal-actions-col .btn { flex: none; }
+  .btn-danger { background: var(--airmail-red); color: #fff; }
+  .btn-ghost { background: var(--paper); color: var(--ink); }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.5/babel.min.js" crossorigin></script>
+
+<script type="text/babel" data-presets="react">
+const { useState, useEffect, useCallback } = React;
+
+/* ---------- helpers ---------- */
+
+const fmt = (n) => {
+  const sign = n < 0 ? "-" : "";
+  const abs = Math.abs(n);
+  return (
+    sign +
+    "$" +
+    abs.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+  );
+};
+
+const round2 = (n) => Math.round(n * 100) / 100;
+
+const STORAGE_KEY = "pase-de-gastos-state-v1";
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return { config: null, days: [] };
+}
+
+/* ---------- small components ---------- */
+
+function FlapNumber({ value, negative }) {
+  return (
+    <span className={"flap-row" + (negative ? " flap-negative" : "")}>
+      {value.split("").map((ch, i) =>
+        ch === " " ? (
+          <span key={i} className="flap-space" />
+        ) : (
+          <span key={i} className="flap">
+            {ch}
+          </span>
+        )
+      )}
+    </span>
+  );
+}
+
+function ProgressBar({ ratio, danger }) {
+  const pct = Math.max(0, Math.min(100, ratio * 100));
+  return (
+    <div className="progress-track">
+      <div
+        className="progress-fill"
+        style={{
+          width: pct + "%",
+          background: danger ? "var(--airmail-red)" : ratio > 0.7 ? "var(--gold)" : "var(--stamp-green)",
+        }}
+      />
+    </div>
+  );
+}
+
+/* ---------- setup screen ---------- */
+
+function SetupScreen({ onStart }) {
+  const [budget, setBudget] = useState("");
+  const [days, setDays] = useState("");
+  const b = parseFloat(budget);
+  const d = parseInt(days, 10);
+  const valid = b > 0 && d > 0 && Number.isFinite(b) && Number.isFinite(d);
+  const preview = valid ? round2(b / d) : null;
+
+  return (
+    <div className="setup-wrap fade-in">
+      <div className="card setup-card">
+        <div className="eyebrow">Arma tu viaje</div>
+        <h1 className="title-serif">Reparte tu presupuesto por día</h1>
+        <p className="muted-text">
+          Ingresa cuánto llevas y cuántos días dura tu viaje. Repartimos el gasto diario y llevamos la cuenta por ti.
+        </p>
+
+        <label className="field">
+          <span className="field-label">Presupuesto total (USD)</span>
+          <div className="input-prefix">
+            <span>$</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              placeholder="3000"
+              value={budget}
+              onChange={(e) => setBudget(e.target.value)}
+            />
+          </div>
+        </label>
+
+        <label className="field">
+          <span className="field-label">Días de estancia</span>
+          <input
+            className="input-plain"
+            type="number"
+            inputMode="numeric"
+            placeholder="10"
+            value={days}
+            onChange={(e) => setDays(e.target.value)}
+          />
+        </label>
+
+        {preview !== null && (
+          <div className="preview-pill">
+            ≈ <strong>{fmt(preview)}</strong> disponibles por día
+          </div>
+        )}
+
+        <button
+          className="btn btn-primary btn-block"
+          disabled={!valid}
+          onClick={() => onStart(round2(b), d)}
+        >
+          Comenzar viaje →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+/* ---------- budget view ---------- */
+
+function BudgetView({ state, setState, onOpenReset }) {
+  const [amount, setAmount] = useState("");
+  const [note, setNote] = useState("");
+
+  const days = state.days;
+  const active = days[days.length - 1];
+  const spentToday = active.expenses.reduce((a, e) => a + e.amount, 0);
+  const availableToday = round2(active.base + active.carryIn - spentToday);
+  const totalSpent = days.reduce((acc, d) => acc + d.expenses.reduce((a, e) => a + e.amount, 0), 0);
+  const totalRemaining = round2(state.config.totalBudget - totalSpent);
+  const isLastDay = days.length >= state.config.totalDays;
+  const over = availableToday < 0;
+
+  const addExpense = () => {
+    const val = parseFloat(amount);
+    if (!(val > 0)) return;
+    setState((s) => {
+      const ds = [...s.days];
+      const last = { ...ds[ds.length - 1] };
+      last.expenses = [...last.expenses, { id: Date.now() + Math.random(), amount: round2(val), note: note.trim(), ts: Date.now() }];
+      ds[ds.length - 1] = last;
+      return { ...s, days: ds };
+    });
+    setAmount("");
+    setNote("");
+  };
+
+  const removeExpense = (id) => {
+    setState((s) => {
+      const ds = [...s.days];
+      const last = { ...ds[ds.length - 1] };
+      last.expenses = last.expenses.filter((e) => e.id !== id);
+      ds[ds.length - 1] = last;
+      return { ...s, days: ds };
+    });
+  };
+
+  const nextDay = () => {
+    setState((s) => {
+      const ds = [...s.days];
+      const last = ds[ds.length - 1];
+      const spent = last.expenses.reduce((a, e) => a + e.amount, 0);
+      const leftover = round2(last.base + last.carryIn - spent);
+      const base = round2(s.config.totalBudget / s.config.totalDays);
+      ds.push({ day: last.day + 1, base, carryIn: leftover, expenses: [] });
+      return { ...s, days: ds };
+    });
+  };
+
+  return (
+    <div className="fade-in">
+      <div className="topbar">
+        <div className="day-tag">
+          DÍA {active.day} DE {state.config.totalDays}
+        </div>
+        <button className="icon-btn" aria-label="Opciones" onClick={onOpenReset}>
+          ⋮
+        </button>
+      </div>
+
+      <div className="ticket">
+        <div className="ticket-stub">
+          <span>PASE · DÍA {active.day}</span>
+        </div>
+        <div className="ticket-body ticket-divider">
+          <div className="hero-label">{over ? "TE EXCEDISTE HOY" : "TE QUEDAN HOY"}</div>
+          <FlapNumber value={fmt(Math.abs(availableToday))} negative={over} />
+          <div className="hero-sub">
+            Base de hoy: {fmt(active.base)}
+            {active.carryIn !== 0 && (
+              <span className={"carry-pill" + (active.carryIn < 0 ? " carry-neg" : "")}>
+                {active.carryIn > 0 ? "+" : ""}
+                {fmt(active.carryIn)} {active.carryIn > 0 ? "acumulado" : "descontado"} de ayer
+              </span>
+            )}
+            {active.carryIn !== 0 && (
+              <div className="hero-total">= {fmt(active.base + active.carryIn)} disponibles hoy</div>
+            )}
+          </div>
+          <ProgressBar ratio={spentToday / Math.max(active.base + active.carryIn, 0.01)} danger={over} />
+        </div>
+      </div>
+
+      <div className="card">
+        <div className="section-label">Agregar gasto</div>
+        <div className="expense-form">
+          <div className="input-prefix input-prefix-sm">
+            <span>$</span>
+            <input
+              type="number"
+              inputMode="decimal"
+              placeholder="0.00"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+          </div>
+          <input
+            className="input-plain input-note"
+            type="text"
+            placeholder="Nota (opcional)"
+            value={note}
+            onChange={(e) => setNote(e.target.value)}
+          />
+          <button className="btn btn-primary" onClick={addExpense} disabled={!(parseFloat(amount) > 0)}>
+            + Agregar
+          </button>
+        </div>
+
+        {active.expenses.length === 0 ? (
+          <p className="empty-hint">Aún no registras gastos hoy. Cada uno que agregues se resta al momento.</p>
+        ) : (
+          <ul className="expense-list">
+            {active.expenses
+              .slice()
+              .reverse()
+              .map((e) => (
+                <li key={e.id} className="expense-row">
+                  <span className="expense-note">{e.note || "Gasto"}</span>
+                  <span className="expense-amount">-{fmt(e.amount)}</span>
+                  <button className="expense-del" aria-label="Eliminar gasto" onClick={() => removeExpense(e.id)}>
+                    ×
+                  </button>
+                </li>
+              ))}
+          </ul>
+        )}
+      </div>
+
+      <div className="card summary-card">
+        <div className="section-label">Resumen del viaje</div>
+        <div className="summary-row">
+          <span>Presupuesto total</span>
+          <strong>{fmt(state.config.totalBudget)}</strong>
+        </div>
+        <div className="summary-row">
+          <span>Gastado hasta hoy</span>
+          <strong>{fmt(totalSpent)}</strong>
+        </div>
+        <div className="summary-row">
+          <span>Te queda en todo el viaje</span>
+          <strong className={totalRemaining < 0 ? "neg" : ""}>{fmt(totalRemaining)}</strong>
+        </div>
+        <ProgressBar ratio={totalSpent / Math.max(state.config.totalBudget, 0.01)} danger={totalRemaining < 0} />
+      </div>
+
+      {isLastDay ? (
+        <div className="last-day-note">🎉 Es tu último día de viaje. ¡Que lo disfrutes!</div>
+      ) : (
+        <button className="btn btn-secondary btn-block" onClick={nextDay}>
+          Terminar el día {active.day} →
+        </button>
+      )}
+    </div>
+  );
+}
+
+/* ---------- nearby view (sin API key: usa Google Maps directo) ---------- */
+
+function NearbyView() {
+  const [status, setStatus] = useState("idle"); // idle | locating | ready | error
+  const [errorMsg, setErrorMsg] = useState("");
+  const [coords, setCoords] = useState(null);
+
+  const categories = [
+    { label: "Atracciones turísticas", emoji: "🗽", q: "atracciones turisticas" },
+    { label: "Museos", emoji: "🏛️", q: "museos" },
+    { label: "Parques", emoji: "🌳", q: "parques" },
+    { label: "Miradores", emoji: "🌆", q: "miradores" },
+    { label: "Restaurantes", emoji: "🍽️", q: "restaurantes" },
+    { label: "Tiendas y compras", emoji: "🛍️", q: "tiendas" },
+  ];
+
+  const handleSearch = () => {
+    setStatus("locating");
+    setErrorMsg("");
+    if (typeof window.isSecureContext !== "undefined" && !window.isSecureContext) {
+      setStatus("error");
+      setErrorMsg(
+        "Abriste el archivo directo desde tu dispositivo, y por seguridad los navegadores bloquean la ubicación fuera de una página https. Publica el archivo (por ejemplo en GitHub Pages) y esta función funcionará normalmente."
+      );
+      return;
+    }
+    if (!navigator.geolocation) {
+      setStatus("error");
+      setErrorMsg("Este navegador no permite acceder a la ubicación.");
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setStatus("ready");
+      },
+      () => {
+        setStatus("error");
+        setErrorMsg("No se pudo obtener tu ubicación. Revisa los permisos de ubicación del navegador.");
+      },
+      { enableHighAccuracy: true, timeout: 12000 }
+    );
+  };
+
+  return (
+    <div className="fade-in">
+      <div className="topbar">
+        <div className="day-tag">CERCA DE TI</div>
+      </div>
+
+      <div className="card">
+        <p className="muted-text">
+          Usa tu ubicación actual para ver el mapa y abrir búsquedas turísticas reales y en tiempo real en Google Maps.
+        </p>
+        <button className="btn btn-primary btn-block" onClick={handleSearch} disabled={status === "locating"}>
+          {status === "locating" ? "Obteniendo tu ubicación…" : "📍 Ver qué hay cerca"}
+        </button>
+        {status === "error" && <p className="error-text">{errorMsg}</p>}
+      </div>
+
+      {status === "ready" && coords && (
+        <div className="card fade-in">
+          <div className="map-embed-wrap">
+            <iframe
+              title="Mapa de tu ubicación"
+              src={"https://maps.google.com/maps?q=" + coords.lat + "," + coords.lng + "&z=14&output=embed"}
+              loading="lazy"
+            ></iframe>
+          </div>
+          <div className="near-label">Explora cerca de ti</div>
+          <div className="cat-grid">
+            {categories.map((c) => (
+              <a
+                key={c.q}
+                className="cat-btn"
+                href={"https://www.google.com/maps/search/" + encodeURIComponent(c.q) + "/@" + coords.lat + "," + coords.lng + ",14z"}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <span className="cat-emoji">{c.emoji}</span>
+                {c.label}
+              </a>
+            ))}
+          </div>
+          <p className="disclaimer">Cada botón abre Google Maps con resultados reales cerca de tu ubicación actual.</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ---------- editar viaje ---------- */
+
+function EditForm({ state, onCancel, onSave }) {
+  const [budget, setBudget] = useState(String(state.config.totalBudget));
+  const [days, setDays] = useState(String(state.config.totalDays));
+  const activeDay = state.days[state.days.length - 1].day;
+  const b = parseFloat(budget);
+  const d = parseInt(days, 10);
+  const valid = b > 0 && d >= activeDay && Number.isFinite(b) && Number.isFinite(d);
+
+  return (
+    <>
+      <h3>Editar viaje</h3>
+      <p>Esto ajusta el presupuesto de hoy en adelante. Tus gastos ya registrados no cambian.</p>
+      <label className="field">
+        <span className="field-label">Presupuesto total (USD)</span>
+        <div className="input-prefix">
+          <span>$</span>
+          <input
+            type="number"
+            inputMode="decimal"
+            value={budget}
+            onChange={(e) => setBudget(e.target.value)}
+          />
+        </div>
+      </label>
+      <label className="field">
+        <span className="field-label">Días totales de estancia</span>
+        <input
+          className="input-plain"
+          type="number"
+          inputMode="numeric"
+          value={days}
+          onChange={(e) => setDays(e.target.value)}
+        />
+      </label>
+      {Number.isFinite(d) && d < activeDay && (
+        <p className="error-text">Los días totales no pueden ser menos que el día actual ({activeDay}).</p>
+      )}
+      <div className="modal-actions">
+        <button className="btn btn-ghost" onClick={onCancel}>
+          Cancelar
+        </button>
+        <button className="btn btn-primary" disabled={!valid} onClick={() => onSave(round2(b), d)}>
+          Guardar
+        </button>
+      </div>
+    </>
+  );
+}
+
+/* ---------- root app ---------- */
+
+function App() {
+  const [state, setState] = useState(loadState);
+  const [view, setView] = useState("budget");
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [settingsView, setSettingsView] = useState("menu"); // menu | edit | reset
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch (e) {}
+  }, [state]);
+
+  const onStart = useCallback((totalBudget, totalDays) => {
+    const base = round2(totalBudget / totalDays);
+    setState({
+      config: { totalBudget, totalDays },
+      days: [{ day: 1, base, carryIn: 0, expenses: [] }],
+    });
+  }, []);
+
+  const updateConfig = (totalBudget, totalDays) => {
+    setState((s) => {
+      const newBase = round2(totalBudget / totalDays);
+      const ds = [...s.days];
+      const lastIdx = ds.length - 1;
+      ds[lastIdx] = { ...ds[lastIdx], base: newBase };
+      return { ...s, config: { totalBudget, totalDays }, days: ds };
+    });
+  };
+
+  const closeSettings = () => {
+    setSettingsOpen(false);
+    setSettingsView("menu");
+  };
+
+  const doReset = () => {
+    setState({ config: null, days: [] });
+    closeSettings();
+    setView("budget");
+  };
+
+  return (
+    <div>
+      <div className="airmail-stripe" />
+      <div className="app-header">
+        <div>
+          <h2 className="title-serif">✈ Pase de Gastos</h2>
+          <div className="sub">Tu presupuesto diario de viaje</div>
+        </div>
+      </div>
+
+      <div className="content">
+        {!state.config ? (
+          <SetupScreen onStart={onStart} />
+        ) : view === "budget" ? (
+          <BudgetView state={state} setState={setState} onOpenReset={() => setSettingsOpen(true)} />
+        ) : (
+          <NearbyView />
+        )}
+      </div>
+
+      {state.config && (
+        <div className="bottom-nav">
+          <button className={"nav-tab" + (view === "budget" ? " active" : "")} onClick={() => setView("budget")}>
+            <span className="nav-icon">💰</span>
+            Presupuesto
+            <span className="dot" />
+          </button>
+          <button className={"nav-tab" + (view === "nearby" ? " active" : "")} onClick={() => setView("nearby")}>
+            <span className="nav-icon">📍</span>
+            Cerca de mí
+            <span className="dot" />
+          </button>
+        </div>
+      )}
+
+      {settingsOpen && (
+        <div className="modal-overlay" onClick={closeSettings}>
+          <div className="modal" onClick={(e) => e.stopPropagation()}>
+            {settingsView === "menu" && (
+              <>
+                <h3>Opciones del viaje</h3>
+                <p>Ajusta tu presupuesto o días, o reinicia el viaje desde cero.</p>
+                <div className="modal-actions modal-actions-col">
+                  <button className="btn btn-secondary btn-block" onClick={() => setSettingsView("edit")}>
+                    Editar presupuesto o días
+                  </button>
+                  <button className="btn btn-danger btn-block" onClick={() => setSettingsView("reset")}>
+                    Reiniciar viaje
+                  </button>
+                  <button className="btn btn-ghost btn-block" onClick={closeSettings}>
+                    Cancelar
+                  </button>
+                </div>
+              </>
+            )}
+            {settingsView === "edit" && (
+              <EditForm
+                state={state}
+                onCancel={() => setSettingsView("menu")}
+                onSave={(b, d) => {
+                  updateConfig(b, d);
+                  closeSettings();
+                }}
+              />
+            )}
+            {settingsView === "reset" && (
+              <>
+                <h3>¿Reiniciar viaje?</h3>
+                <p>Se borrará tu presupuesto y todos los gastos registrados. Esta acción no se puede deshacer.</p>
+                <div className="modal-actions">
+                  <button className="btn btn-ghost" onClick={() => setSettingsView("menu")}>
+                    Cancelar
+                  </button>
+                  <button className="btn btn-danger" onClick={doReset}>
+                    Sí, reiniciar
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
